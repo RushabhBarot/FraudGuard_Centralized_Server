@@ -6,8 +6,8 @@ import org.example.centralserver.Entity.Transection;
 import org.example.centralserver.helper.AccountLoader;
 import org.example.centralserver.helper.GetAccounts;
 import org.example.centralserver.mapper.Bank1TransactionMapper;
-import org.example.centralserver.repo.AccountRepo;
-import org.example.centralserver.repo.TransectionRepo;
+import org.example.centralserver.repo.mongo.AccountRepo;
+import org.example.centralserver.repo.mongo.TransectionRepo;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -50,8 +50,8 @@ public class TransactionService {
 
     private final String bankApiUrl = "http://localhost:8080/transactions"; // Replace with actual API URL
 
-    // Scheduled task to fetch and process transactions every 5 minutes
-    @Scheduled(fixedRate = 60000) //1 min
+    // Scheduled task to fetch and process transactions every 2 minutes
+    @Scheduled(fixedRate = 120000) //2 min
     public void processTransactions() {
         System.out.println("Fetching transactions from bank API...");
 

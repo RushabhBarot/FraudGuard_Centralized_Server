@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Document(collation = "Transection")
 public class Transection implements Serializable {
+
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -39,6 +40,10 @@ public class Transection implements Serializable {
         this.senderBank = number;
         this.receiverBank = receiverBankId;
         this.createdDate = createdDate;
+    }
+
+    public double getAmt() {
+        return amt;
     }
 
     public String getId() {
