@@ -13,8 +13,11 @@ import java.util.Map;
 public class Bank1TransactionMapper implements BankTransactionMapper{
     @Override
     public List<Transection> mapTransactions(List<?> bankData) {
+
         List<Transection> transactions = new ArrayList<>();
 
+        //iterate through this bankData list which will be coming from banks at regular interval
+        //we have to map every transaction from this list to our transaction entity
         for (Object obj : bankData) {
             @SuppressWarnings("unchecked")
             Map<String, Object> data = (Map<String, Object>) obj;

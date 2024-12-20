@@ -12,6 +12,7 @@ public class Bank1AccountMapper {
     public Account mapAccount(Map<String, Object> accountData) {
 
         // Extract data from the response map
+        //unique id given to Bank2 account
         String id = (String) accountData.get("id");
         String user = (String) accountData.get("user");
         List<String> nomineeIds = (List<String>) accountData.get("nominees");
@@ -20,9 +21,9 @@ public class Bank1AccountMapper {
         // Using the constructor to create an Account object
         Account account = new Account(
                 id,
-                "1",                  // Hardcoded bank ID for now, set dynamically if needed
-                user,                 // User ID
-                nomineeIds     // List of nominee accounts
+                "1",   // Hardcoded bank ID for now, set dynamically if needed
+                user,        // User ID
+                nomineeIds   // List of nominee accounts
         );
 
         return account;

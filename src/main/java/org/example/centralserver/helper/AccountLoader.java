@@ -27,8 +27,11 @@ public class AccountLoader {
 
             Account account = redisService.getObject(accId, Account.class);
 
+            //if account is not in redis then find it in our central sys database
             if (account == null) {
                 Account account1 = accountService.getAccountByAccId(accId);
+                //if not found even in database means we have to fetch it from bank2 and map it to
+                //our account and then return it
                 if (account1 == null) {
                     account1 = getAccounts.getAccount(accId);
                 }
@@ -40,6 +43,7 @@ public class AccountLoader {
                 return account1;
             }
 
+            //if already in redis
             account.setLastTransaction(transection.getCreatedDate());
             account.setFreq(account.getFreq() + 1);
             redisService.saveObject(accId, account);

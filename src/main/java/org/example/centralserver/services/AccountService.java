@@ -21,10 +21,10 @@ public class AccountService {
         return accountRepo.save(account);
     }
 
-    public Account getaccount(String id) throws AccountNotFoundException {
-        return accountRepo.findByAccId(id)
-                .orElseThrow(() -> new AccountNotFoundException(id));
-    }
+//    public Account getaccount(String id) throws AccountNotFoundException {
+//        return accountRepo.findByAccId(id)
+//                .orElseThrow(() -> new AccountNotFoundException(id));
+//    }
 
     public Account getAccountByAccId(String accId) {
         return accountRepo.findByAccId(accId).orElse(null);

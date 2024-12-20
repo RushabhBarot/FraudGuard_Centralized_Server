@@ -55,11 +55,14 @@ public class TransactionService {
     public void processTransactions() {
         System.out.println("Fetching transactions from bank API...");
 
-        // Fetch transactions from the bank's API
+        // Fetch transactions from the Bank2's API
         List<?> response = restTemplate.getForObject(bankApiUrl, List.class);
+
+        //we pass this list to mapper
         List<Transection> transactions = bank1TransactionMapper.mapTransactions(response);
 
         for (Transection transaction : transactions) {
+            //save each transaction in our database of central sys
             transectionRepo.save(transaction);
             processTransaction(transaction);
         }
@@ -86,11 +89,11 @@ public class TransactionService {
         if(transaction.getAmt() > 2000){
             redisService.saveObject(transaction.getId(), transaction);
 
-        }
-        else if (isSenderSuspicious || isReceiverSuspicious) {
+        } else if (isSenderSuspicious || isReceiverSuspicious) {
 
 
         } else {
+            //not suspicious means delete it
             redisService.deleteKey(sender);
             redisService.deleteKey(receiver);
 

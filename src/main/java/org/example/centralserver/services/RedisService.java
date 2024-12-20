@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 public class RedisService {
 
     @Autowired
+    //save in key value pairs key being string and value as object
     private RedisTemplate<String, Object> redisTemplate;
 
     // Save an object in Redis

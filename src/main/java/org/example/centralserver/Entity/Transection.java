@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collation = "Transection")
+@Document("Transection")
 public class Transection implements Serializable {
 
     @Serial
