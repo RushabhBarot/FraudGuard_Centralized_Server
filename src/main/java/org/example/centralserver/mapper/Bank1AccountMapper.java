@@ -21,7 +21,7 @@ public class Bank1AccountMapper {
         // Using the constructor to create an Account object
         Account account = new Account(
                 id,
-                "1",   // Hardcoded bank ID for now, set dynamically if needed
+                "1",   // Hardcoded bank ID for now, set dynamically later
                 user,        // User ID
                 nomineeIds   // List of nominee accounts
         );

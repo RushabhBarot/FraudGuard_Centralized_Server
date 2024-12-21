@@ -2,16 +2,14 @@ package org.example.centralserver.Entity;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +18,9 @@ import java.util.List;
 @Data
 @Getter
 @Setter
+@ToString
 @Node("Account")
-public class AccountNeo4J {
+public class AccountNeo4J  {
     @Serial
     private static final long serialVersionUID = 1L; // Add a serialVersionUID for better version control during serialization
 
@@ -30,7 +29,7 @@ public class AccountNeo4J {
     private String accId;
     private String bank;
     private String user;
-    private double freq=0;//avg transections per day...
+    private double freq=0;//avg transactions per day...
 
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -38,15 +37,17 @@ public class AccountNeo4J {
     private LocalDateTime lastTransaction=null;
 
     private int regularIntervelTransection=0;
-    //let's say every day at 2 pm so this will incresee
+    //let's say every day at 2 pm so this will increase
     private boolean isSuspicious=false;
 
 
     @Relationship(type = "SENT", direction = Relationship.Direction.OUTGOING)
-    private List<TransectionNeo4J> transactions=new ArrayList<>();
+    private List<TransectionNeo4J> transactions = new ArrayList<>();
 
     private List<String> nominees=new ArrayList<String>();
+
     public AccountNeo4J(){}
+
     public AccountNeo4J(String accId, String bank, String user, List<String> nominees) {
         this.accId = accId;
         this.bank = bank;
@@ -78,7 +79,23 @@ public class AccountNeo4J {
         // Create the relationship between sender and receiver
         System.out.println("adding edge");
         TransectionNeo4J transectionNeo4J=new TransectionNeo4J(transaction,receiver);
+        System.out.println("TransactionNeo4J entity: "+transectionNeo4J);
         this.transactions.add(transectionNeo4J);
-
     }
+
+    @Override
+    public String toString() {
+        return "AccountNeo4J{" +
+                "id='" + id + '\'' +
+                ", accId='" + accId + '\'' +
+                ", bank='" + bank + '\'' +
+                ", user='" + user + '\'' +
+                ", freq=" + freq +
+                ", lastTransaction=" + lastTransaction +
+                ", regularIntervelTransection=" + regularIntervelTransection +
+                ", isSuspicious=" + isSuspicious +
+                ", nominees=" + nominees +
+                '}';
+    }
+
 }

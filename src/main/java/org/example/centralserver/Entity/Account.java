@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @Getter
 @Setter
-@Document("accounts")
+@Document("Account")
 public class Account implements Serializable {
 
     @Serial
@@ -41,6 +41,7 @@ public class Account implements Serializable {
     private List<String>nominees=new ArrayList<String>();
 
     public Account(){}
+
     public Account( String accId, String bank, String user, List<String> nominees) {
         //this accId will be same that of id in bank2 microservice
         this.accId = accId;
@@ -48,6 +49,7 @@ public class Account implements Serializable {
         this.user = user;
         this.nominees = nominees;
     }
+
 
     public void setFreq(double freq) {
         this.freq = freq;
@@ -64,5 +66,21 @@ public class Account implements Serializable {
     public LocalDateTime getLastTransaction() {
         return lastTransaction;
     }
+
+    @Override
+    public String toString() {
+        return "Account{" +
+                "id='" + id + '\'' +
+                ", accId='" + accId + '\'' +
+                ", bank='" + bank + '\'' +
+                ", user='" + user + '\'' +
+                ", freq=" + freq +
+                ", lastTransaction=" + (lastTransaction != null ? lastTransaction.toString() : "null") +
+                ", regularIntervelTransection=" + regularIntervelTransection +
+                ", isSuspicious=" + isSuspicious +
+                ", nominees=" + (nominees != null ? nominees.toString() : "null") +
+                '}';
+    }
+
 }
 
