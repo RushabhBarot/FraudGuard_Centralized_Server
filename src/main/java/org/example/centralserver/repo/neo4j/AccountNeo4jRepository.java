@@ -10,4 +10,6 @@ import java.util.Optional;
 
 public interface AccountNeo4jRepository extends Neo4jRepository<AccountNeo4J, String> {
     Optional<AccountNeo4J> findByAccId(String accId);
+
+
 }
