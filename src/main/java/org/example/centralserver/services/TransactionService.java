@@ -59,7 +59,7 @@ public class TransactionService {
     private final String bankApiUrl = "http://localhost:8080/transactions"; // Replace with actual API URL
 
     // Scheduled task to fetch and process transactions every 2 minutes
-    @Scheduled(fixedRate = 120000) //2 min
+    @Scheduled(fixedRate = 60000) //2 min
     public void processTransactions() {
         System.out.println("Fetching transactions from bank API..."+LocalDateTime.now());
 

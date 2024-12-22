@@ -1,5 +1,8 @@
 package org.example.centralserver.Entity;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.RelationshipProperties;
@@ -7,9 +10,12 @@ import org.springframework.data.neo4j.core.schema.TargetNode;
 
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @RelationshipProperties
 public class TransectionNeo4J {
 
+    // Getters and Setters
     @Id
     @GeneratedValue
     private Long id;  // Add an ID for the relationship property entity
@@ -27,36 +33,15 @@ public class TransectionNeo4J {
         this.receiver = receiver;  // Set the receiver as part of the relationship
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+    public AccountNeo4J getReceiver() {
+        return receiver;
     }
 
     public double getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
-        this.amount = amount;
-    }
-
     public LocalDateTime getTimestamp() {
         return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public AccountNeo4J getReceiver() {
-        return receiver;
-    }
-
-    public void setReceiver(AccountNeo4J receiver) {
-        this.receiver = receiver;
     }
 }
