@@ -18,7 +18,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class TransactionService {
@@ -41,6 +43,10 @@ public class TransactionService {
     @Autowired
     private AccountNeo4jRepository accountNeo4jRepository;
 
+    @Autowired
+    TransactionProcessorService transactionProcessorService;
+
+    List<CompletableFuture<Void>> futures = new ArrayList<>();
 
 
     @Autowired
@@ -62,7 +68,7 @@ public class TransactionService {
 
     // Scheduled task to fetch and process transactions every 2 minutes
     @Scheduled(fixedRate = 60000) //2 min
-    public void processTransactions() {
+    public void processTransactions() throws InterruptedException{
         System.out.println("Fetching transactions from bank API..."+LocalDateTime.now());
 
         // Fetch transactions from the Bank2's API
@@ -72,124 +78,41 @@ public class TransactionService {
         //we pass this list to mapper
         List<Transection> transactions = bank1TransactionMapper.mapTransactions(response);
 
-        for (Transection transaction : transactions) {
-            //save each transaction in our database of central sys
-            transectionRepo.save(transaction);
-            processTransaction(transaction);
+
+        int totalTransactions = transactions.size();
+        int processedCount = 0;
+
+
+        while (processedCount < totalTransactions) {
+            List<CompletableFuture<Void>> batchFutures = new ArrayList<>();
+
+            // Process one batch
+            int endIndex = Math.min(processedCount + BATCH_SIZE, totalTransactions);
+            for (int i = processedCount; i < endIndex; i++) {
+                CompletableFuture<Void> future = transactionProcessorService.processTransactionAsync(transactions.get(i), "bank1");
+                //batchFutures contains all transaction of this batch
+                batchFutures.add(future);
+            }
+
+            // Wait for batch completion
+            //each completableFuture is handled on different thread in a batch
+            //Combines all the CompletableFuture instances in the batchFutures list into a single CompletableFuture.
+            CompletableFuture.allOf(batchFutures.toArray(new CompletableFuture[0])).join();
+            processedCount = endIndex;
         }
     }
 
-    // Process each transaction
-    private void processTransaction(Transection transaction) {
-        String sender = transaction.getSender();
-        String receiver = transaction.getReceiver();
-
-        // Process sender account
-        Account senderAccount = accountLoader.loadAccountIntoRedis(sender, transaction);
-
-        // Process receiver account
-        Account receiverAccount = accountLoader.loadAccountIntoRedis(receiver, transaction);
-
-        // Check for suspicious activity
-        boolean isSenderSuspicious = checkSuspiciousAccount(senderAccount, transaction);
-        boolean isReceiverSuspicious = checkSuspiciousAccount(receiverAccount, transaction);
-
-        System.out.println("Source Account: " + senderAccount);
-
-        AccountNeo4J senderAccountNeo4j = modelMapper.map(senderAccount, AccountNeo4J.class);
-        AccountNeo4J receiverAccountNeo4j = modelMapper.map(receiverAccount, AccountNeo4J.class);
-
-
-
-        //Save suspicious accounts and transactions to Redis, and others to MongoDB
-        if(transaction.getAmt() > 2000){
-            redisService.saveObject(transaction.getId(), transaction);
-
-            System.out.println("Saving AccountNeo4J: " + senderAccountNeo4j);
-
-            // Check if the account already exists in the database before saving
-            if (accountNeo4jRepository.existsById(senderAccountNeo4j.getAccId())) {
-                System.out.println("Account exists: " + senderAccountNeo4j.getAccId());
-            } else {
-                accountNeo4jRepository.save(senderAccountNeo4j);
-                System.out.println("Saving AccountNeo4J: " + senderAccountNeo4j);
-            }
-
-            if (accountNeo4jRepository.existsById(receiverAccountNeo4j.getAccId())) {
-                System.out.println("Account exists: " + receiverAccountNeo4j.getAccId());
-            } else {
-                accountNeo4jRepository.save(receiverAccountNeo4j);
-                System.out.println("Saving AccountNeo4J: " + receiverAccountNeo4j);
-            }
-
-
-
-            createTransactionRelationship(senderAccountNeo4j, receiverAccountNeo4j, transaction);
-
-
-        } else if (isSenderSuspicious || isReceiverSuspicious) {
-            // Check if the account already exists in the database before saving
-            if (accountNeo4jRepository.existsById(senderAccountNeo4j.getAccId())) {
-                System.out.println("Account exists: " + senderAccountNeo4j.getAccId());
-            } else {
-                accountNeo4jRepository.save(senderAccountNeo4j);
-                System.out.println("Saving AccountNeo4J: " + senderAccountNeo4j);
-            }
-
-            if (accountNeo4jRepository.existsById(receiverAccountNeo4j.getAccId())) {
-                System.out.println("Account exists: " + receiverAccountNeo4j.getAccId());
-            } else {
-                accountNeo4jRepository.save(receiverAccountNeo4j);
-                System.out.println("Saving AccountNeo4J: " + receiverAccountNeo4j);
-            }
-
-
-            createTransactionRelationship(senderAccountNeo4j, receiverAccountNeo4j, transaction);
-
-        } else {
-            //not suspicious means delete it
-            redisService.deleteKey(sender);
-            redisService.deleteKey(receiver);
-        }
-
-        accountRepo.save(senderAccount);
-        accountRepo.save(receiverAccount);
-    }
-
-        // Fetch account from Redis or database, update, and return
-
-    // Check if the account is suspicious based on the criteria
-    private boolean checkSuspiciousAccount(Account account, Transection transaction) {
-        boolean isSuspicious = false;
-
-        // Check if frequency exceeds 50
-        if (account.getFreq() > 10) {
-            isSuspicious = true;
-        }
-
-        // Check if the gap between last transaction and today is more than a year
-        if (account.getLastTransaction() != null) {
-            long yearsGap = ChronoUnit.YEARS.between(account.getLastTransaction(), LocalDateTime.now());
-            if (yearsGap > 1) {
-                isSuspicious = true;
-            }
-        }
-
-        return isSuspicious;
-    }
 
     private void createTransactionRelationship(AccountNeo4J sender, AccountNeo4J receiver, Transection transaction) {
         // Define a relationship, e.g., "SENT"
         sender.addTransactionTo(receiver, transaction);
-
-
-        if (accountNeo4jRepository.existsById(sender.getAccId())) {
-            System.out.println("Account exists: " + sender.getAccId());
-        } else {
-            accountNeo4jRepository.save(sender);
-            System.out.println("Saving AccountNeo4J: " + sender);
-        }
+        accountNeo4jRepository.save(sender);
     }
+
+    private void loadIntoDb() {
+
+    }
+
 
 
 }

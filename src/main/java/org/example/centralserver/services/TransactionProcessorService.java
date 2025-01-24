@@ -14,7 +14,7 @@ public class TransactionProcessorService {
     @Autowired
     AccountLoader accountLoader;
 
-    //we have configured taskExecutor before
+    //we have configured taskExecutor before this will process each transaction on different thread
     @Async("taskExecutor")
     public CompletableFuture<Void> processTransactionAsync(Transection transaction, String bank) {
         try {
