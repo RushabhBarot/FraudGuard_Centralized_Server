@@ -23,6 +23,7 @@ import java.util.List;
 @Service
 public class TransactionService {
 
+    private static final int BATCH_SIZE = 1000;
 
     private static  ModelMapper modelMapper = new ModelMapper();
 
@@ -31,6 +32,7 @@ public class TransactionService {
 
     @Autowired
     private RestTemplate restTemplate;
+
 
 
     @Autowired

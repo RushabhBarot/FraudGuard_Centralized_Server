@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import javax.security.auth.login.AccountNotFoundException;
 
+
 @Service
 public class AccountService {
 
@@ -20,15 +21,8 @@ public class AccountService {
     public Account addaccount(Account account) {
         return accountRepo.save(account);
     }
-
-//    public Account getaccount(String id) throws AccountNotFoundException {
-//        return accountRepo.findByAccId(id)
-//                .orElseThrow(() -> new AccountNotFoundException(id));
-//    }
-
-    public Account getAccountByAccId(String accId) {
-        return accountRepo.findByAccId(accId).orElse(null);
+    public Account getaccount(String id) {
+        return accountRepo.findById(id).orElse(null);
     }
-
 
 }

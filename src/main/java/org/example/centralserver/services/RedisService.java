@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 @Service
 public class RedisService {
 
@@ -27,5 +29,20 @@ public class RedisService {
 
     public void deleteKey(String key) {
         redisTemplate.delete(key);
+    }
+
+    // Add a value to a Redis set
+    public void addToSet(String setName, String value) {
+        redisTemplate.opsForSet().add(setName, value);
+    }
+
+    // Retrieve all members of a Redis set
+    public Set<Object> getSetMembers(String setName) {
+        return redisTemplate.opsForSet().members(setName);
+    }
+
+    // Remove a value from a Redis set
+    public void removeFromSet(String setName, String value) {
+        redisTemplate.opsForSet().remove(setName, value);
     }
 }
