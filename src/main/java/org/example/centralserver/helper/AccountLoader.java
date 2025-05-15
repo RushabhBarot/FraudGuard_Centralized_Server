@@ -20,7 +20,7 @@ public class AccountLoader {
     @Autowired
     private RedisService redisService;
 
-    @Autowired
+    //@Autowired
     private RedissonClient redisson;
 
     @Autowired
@@ -59,7 +59,7 @@ public class AccountLoader {
                     boolean isAccountSuspicious = checkSuspiciousAccount(account, transection);
 
                     if (transection.getAmt() > 5000 || isAccountSuspicious) {
-                        account.setSuspicious(true);
+                     //   account.setSuspicious(true);
                     }
 
                     redisService.saveObject(redisKey, account);
