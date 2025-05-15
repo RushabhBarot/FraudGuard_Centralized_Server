@@ -1,8 +1,6 @@
 package org.example.centralserver.services;
 
 
-import org.example.centralserver.Entity.Account;
-import org.example.centralserver.Entity.AccountNeo4J;
 import org.example.centralserver.Entity.Transection;
 import org.example.centralserver.helper.AccountLoader;
 import org.example.centralserver.helper.GetAccounts;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

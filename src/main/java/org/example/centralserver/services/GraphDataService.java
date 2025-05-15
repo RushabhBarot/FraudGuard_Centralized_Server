@@ -1,7 +1,5 @@
 package org.example.centralserver.services;
 
-import org.example.centralserver.Entity.AccountNeo4J;
-import org.example.centralserver.Entity.TransectionNeo4J;
 import org.example.centralserver.dto.AccountNodeDTO;
 import org.example.centralserver.dto.GraphDataDTO;
 import org.example.centralserver.dto.TransactionEdgeDTO;
