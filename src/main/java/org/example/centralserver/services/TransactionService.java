@@ -7,7 +7,7 @@ import org.example.centralserver.helper.GetAccounts;
 import org.example.centralserver.mapper.Bank1TransactionMapper;
 import org.example.centralserver.repo.mongo.AccountRepo;
 import org.example.centralserver.repo.mongo.TransectionRepo;
-import org.example.centralserver.repo.neo4j.AccountNeo4jRepository;
+import org.example.centralserver.repo.neo4j.AccountNodeRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,7 +38,7 @@ public class TransactionService {
     private AccountLoader accountLoader;
 
     @Autowired
-    private AccountNeo4jRepository accountNeo4jRepository;
+    private AccountNodeRepository accountNeo4jRepository;
 
     @Autowired
     TransactionProcessorService transactionProcessorService;
