@@ -1,8 +1,6 @@
 package org.example.centralserver.Entity.neo4j;
 
 
-import lombok.Data;
-import org.example.centralserver.Entity.neo4j.AccountNode;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.RelationshipProperties;

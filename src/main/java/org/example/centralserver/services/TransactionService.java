@@ -1,112 +1,248 @@
 package org.example.centralserver.services;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.centralserver.Entity.Account;
 import org.example.centralserver.Entity.Transection;
-import org.example.centralserver.helper.AccountLoader;
-import org.example.centralserver.mapper.Bank1TransactionMapper;
+import org.example.centralserver.Entity.config.BankConfig;
+import org.example.centralserver.dto.AccountDTOforCSV;
 import org.example.centralserver.repo.mongo.AccountRepo;
 import org.example.centralserver.repo.mongo.TransectionRepo;
 import org.example.centralserver.repo.neo4j.AccountNodeRepository;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 public class TransactionService {
 
-    private static final int BATCH_SIZE = 1000;
-
-    private static  ModelMapper modelMapper = new ModelMapper();
-
-//    @Autowired
-//    private ModelMapper modelMapper;
-
-    @Autowired
-    private RestTemplate restTemplate;
+    private static final int BATCH_SIZE = 10000;
 
 
-
-    @Autowired
-    private AccountLoader accountLoader;
-
-    @Autowired
-    private AccountNodeRepository accountNeo4jRepository;
 
     @Autowired
     TransactionProcessorService transactionProcessorService;
-
-    List<CompletableFuture<Void>> futures = new ArrayList<>();
-
+    @Autowired
+    BankConfigService bankConfigService;
+    @Autowired
+    TransformData transformData;
 
     @Autowired
-    private TransectionRepo transectionRepo;
+    RestTemplate restTemplate;
+
+
+    @Value("${FLASKURI}")
+    private String uri;
 
     @Autowired
-    private AccountRepo accountRepo;
-
-    @Autowired
-    private Bank1TransactionMapper bank1TransactionMapper;
-
-    @Autowired
-    private GetAccounts getAccounts;
+    private ObjectMapper objectMapper;
 
     @Autowired
     RedisService redisService;
 
-    private final String bankApiUrl = "http://localhost:8080/transactions"; // Replace with actual API URL
-
-    // Scheduled task to fetch and process transactions every 2 minutes
-    @Scheduled(fixedRate = 60000) //2 min
-    public void processTransactions() throws InterruptedException{
-        System.out.println("Fetching transactions from bank API..."+LocalDateTime.now());
-
-        // Fetch transactions from the Bank2's API
-        List<?> response = restTemplate.getForObject(bankApiUrl, List.class);
-        System.out.println(response);
-
-        //we pass this list to mapper
-        List<Transection> transactions = bank1TransactionMapper.mapTransactions(response);
+    List<CompletableFuture<Void>> futures = new ArrayList<>();
+    @Autowired
+    private TransectionRepo transectionRepo;
+    @Autowired
+    private AccountRepo accountRepo;
+    @Autowired
+    private AccountNodeRepository accountNodeRepo;
+    @Autowired
+    private AccountService accountService;
 
 
-        int totalTransactions = transactions.size();
-        int processedCount = 0;
+    public void processTransactions() throws Exception {
+        System.out.println("Fetching transactions from bank API...");
 
+        Instant startTime = Instant.now();
+        // Fetch transactions from the bank's API
 
-        while (processedCount < totalTransactions) {
-            List<CompletableFuture<Void>> batchFutures = new ArrayList<>();
+        List<BankConfig> banks = bankConfigService.getAllBankConfig();
+        List<List<Transection>>allTransactions = new ArrayList<>();
 
-            // Process one batch
-            int endIndex = Math.min(processedCount + BATCH_SIZE, totalTransactions);
-            for (int i = processedCount; i < endIndex; i++) {
-                CompletableFuture<Void> future = transactionProcessorService.processTransactionAsync(transactions.get(i), "bank1");
-                //batchFutures contains all transaction of this batch
-                batchFutures.add(future);
+        banks.forEach(bankConfig -> {
+            List<Transection> transectionList = transformData.convertAndProcessData(bankConfig);
+            if(Objects.equals(bankConfig.getDatabaseStructure(), "NOSQL")) {
+                allTransactions.add(transectionList);
             }
 
-            // Wait for batch completion
-            //each completableFuture is handled on different thread in a batch
-            //Combines all the CompletableFuture instances in the batchFutures list into a single CompletableFuture.
-            CompletableFuture.allOf(batchFutures.toArray(new CompletableFuture[0])).join();
-            processedCount = endIndex;
+        });
+
+
+        for (List<Transection> transectionList : allTransactions) {
+            int totalTransactions = transectionList.size();
+            int processedCount = 0;
+
+            //replace by with chunk
+
+            while (processedCount < totalTransactions) {
+                List<CompletableFuture<Void>> batchFutures = new ArrayList<>();
+
+                // Process one batch
+                int endIndex = Math.min(processedCount + BATCH_SIZE, totalTransactions);
+                for (int i = processedCount; i < endIndex; i++) {
+                    CompletableFuture<Void> future = transactionProcessorService.processTransactionAsync(transectionList.get(i), banks.get(0).getBankId());
+                    batchFutures.add(future);
+                }
+
+                // Wait for batch completion
+                CompletableFuture.allOf(batchFutures.toArray(new CompletableFuture[0])).join();
+                processedCount = endIndex;
+            }
+
+
+
         }
-    }
 
 
-    private void createTransactionRelationship(AccountNeo4J sender, AccountNeo4J receiver, Transection transaction) {
-        // Define a relationship, e.g., "SENT"
-        sender.addTransactionTo(receiver, transaction);
-        accountNeo4jRepository.save(sender);
+        loadIntoDb();
+
+
+        if(!postDataToFlask(accountService.getaccounts()))
+        {
+            throw new Exception("Error in generating csv for test");
+        }
+        else {
+            System.out.println("CSV generated");
+        }
+
+
+
     }
 
     private void loadIntoDb() {
 
+        // Move all accounts from Redis to accountRepo
+        Set<Object> accountKeys = redisService.getSetMembers("accounts");
+        if (accountKeys != null) {
+            for (Object accountKey : accountKeys) {
+                Account account = redisService.getObject(accountKey.toString(), Account.class);
+
+
+//                Optional<AccountNode> existingAccountNode = accountNodeRepo.findByAccountNumber(account.getAccountNumber());
+//
+//
+//                AccountNode accountNode;
+
+//                if (existingAccountNode.isPresent()) {
+//                    // If node exists, update the existing node
+//                    accountNode = existingAccountNode.get();
+//
+//                    // Update all fields of the existing node
+//                    accountNode.setFreq((int)account.getFreq());
+//                    accountNode.setRegularIntervalTransaction(account.getRegularIntervelTransection());
+//                    accountNode.setSuspicious(account.getSuspicious());
+//                } else {
+//                    // If no existing node, create a new one
+//                    accountNode = new AccountNode();
+//                    accountNode.setAccountNumber(account.getAccountNumber());
+//                    accountNode.setFreq((int)account.getFreq());
+//                    accountNode.setRegularIntervalTransaction(account.getRegularIntervelTransection());
+//                    accountNode.setSuspicious(account.getSuspicious());
+//                }
+//
+//                // Save the node (will update if exists, create if new)
+//                accountNodeRepo.save(accountNode);
+//
+//                // Also save the original account
+//
+//
+
+                accountRepo.save(account);
+            }
+        }
+
+        // Move all transactions from Redis to transectionRepo
+        Set<Object> transectionKeys = redisService.getSetMembers("transaction");
+        if (transectionKeys != null) {
+            for (Object transectionKey : transectionKeys) {
+                Transection transaction = redisService.getObject(transectionKey.toString(), Transection.class);
+
+//                Account senderacc= (Account) transaction.getSender();
+//                Account receiveracc= (Account) transaction.getReceiver();
+//
+//
+//                AccountNode senderNode = accountNodeRepo.findByAccountNumber(senderacc.getAccountNumber()).orElseThrow();
+//                AccountNode receiverNode = accountNodeRepo.findByAccountNumber(receiveracc.getAccountNumber()).orElseThrow();
+//
+//
+//                TransactionRelationship transactionEdge = new TransactionRelationship();
+//
+//                transactionEdge.setAmt(transaction.getAmt());
+//                transactionEdge.setCurrency(transaction.getCurrency());
+//                transactionEdge.setCreatedDate(transaction.getCreatedDate());
+//                transactionEdge.setType(transaction.getType());
+//                transactionEdge.setDescription(transaction.getDescription());
+//                transactionEdge.setTargetAccount(receiverNode);
+//                senderNode.getOutgoingTransactions().add(transactionEdge);
+//
+//
+////                String url = "http://localhost:5000/predict"; // Flask running locally
+////
+////                RestTemplate restTemplate = new RestTemplate();
+////                Map<String, Object> request = new HashMap<>();
+////                request.put("features", transaction);
+////
+////                ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+////
+////                System.out.println(Objects.requireNonNull(response.getBody()).get("prediction").toString());
+//
+//
+//                accountNodeRepo.save(senderNode);
+//
+//
+//
+//
+//
+//                accountRepo.save(senderacc);
+//                accountRepo.save(receiveracc);
+
+                transectionRepo.save(transaction);
+            }
+        }
+    }
+    public boolean postDataToFlask(List<Account> accounts) {
+        try {
+            // Step 1: Convert to AccountDTOs
+            List<AccountDTOforCSV> dtoList = new ArrayList<>();
+
+            Set<Object> accountKeys = redisService.getSetMembers("accounts");
+            if (accountKeys != null) {
+                for (Object accountKey : accountKeys) {
+                    Account account = redisService.getObject(accountKey.toString(), Account.class);
+                    AccountDTOforCSV accountDTOforCSV=new AccountDTOforCSV(account.getAccountNumber() , account.getSuspicious());
+                    dtoList.add(accountDTOforCSV);
+                }
+            }
+
+
+
+
+            // Step 3: Prepare HTTP headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // Step 3: Prepare and send POST request
+            HttpEntity<List<AccountDTOforCSV>> request = new HttpEntity<>(dtoList, headers);
+            restTemplate.postForObject(uri + "/filtered-accounts", request, String.class);
+
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 

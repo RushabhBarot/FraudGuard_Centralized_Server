@@ -1,11 +1,11 @@
 package org.example.centralserver.Entity;
 
-
-import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -15,46 +15,44 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Document("Transection")
+@Document(collection = "transections")
 public class Transection implements Serializable {
-
     @Serial
     private static final long serialVersionUID = 1L;
 
     @Id
     private String id; // MongoDB will handle this automatically
 
-    private String sender;
-    private String receiver;
+    private Account sender;
+    private Account receiver;
     private double amt;
-    private String senderBank;
-    private String receiverBank;
-    LocalDateTime createdDate;
-
+    private String type;
+    private String currency;
+    private String description;
+    private LocalDateTime createdDate;
+    private Boolean suspicious=false;
     // Let Spring Data automatically handle the creation date
 
-    public Transection(String sender, String receiver, Double amount, String number, String receiverBankId,LocalDateTime createdDate) {
+    public Transection(String id,Account sender, Account receiver, Double amount, String type, String currency,String description , Double balanceAfterTransection,LocalDateTime createdDate) {
+        this.id = id;
         this.sender = sender;
         this.receiver = receiver;
         this.amt = amount;
-        this.senderBank = number;
-        this.receiverBank = receiverBankId;
+        this.type = type;
+        this.currency = currency;
+        this.description = description;
         this.createdDate = createdDate;
-    }
-
-    public double getAmt() {
-        return amt;
     }
 
     public String getId() {
         return id;
     }
 
-    public String getSender() {
+    public Object getSender() {
         return sender;
     }
 
-    public String getReceiver() {
+    public Object getReceiver() {
         return receiver;
     }
 
@@ -62,4 +60,16 @@ public class Transection implements Serializable {
         return createdDate;
     }
 
+    public double getAmt() {
+        return amt;
+    }
+
+    public Boolean getSuspicious() {
+        return suspicious;
+    }
+
+    public void setSuspicious(Boolean suspicious) {
+        this.suspicious = suspicious;
+    }
+    // Optionally, you can add a method to handle your own logic for creation date if needed
 }

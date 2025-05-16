@@ -1,21 +1,25 @@
 package org.example.centralserver.Entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @AllArgsConstructor
 @Data
 @Getter
 @Setter
-@Document("Account")
+@Document("accounts")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Account implements Serializable {
 
     @Serial
@@ -23,10 +27,9 @@ public class Account implements Serializable {
 
     @Id
     private String id;
-    private String accId;
-    private String bank;
-    private String user;
-    private double freq=0; //avg transactions per day...
+    private String accountNumber;
+
+    private double freq=0;
 
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -34,29 +37,30 @@ public class Account implements Serializable {
     private LocalDateTime lastTransaction=null;
 
     private int regularIntervelTransection=0;
-    //let's say every day at 2 pm so this will incresee
-
     private boolean isSuspicious=false;
+    private double suspiciousScore=0.0;
+    private String bankId;
 
-    private List<String>nominees=new ArrayList<String>();
 
     public Account(){}
-
-    public Account( String accId, String bank, String user, List<String> nominees) {
-        //this accId will be same that of id in bank2 microservice
-        this.accId = accId;
-        this.bank = bank;
-        this.user = user;
-        this.nominees = nominees;
+    public Account(String accountNumber , String bankId ,String id) {
+        this.id = id;
+        this.accountNumber = accountNumber;
+        this.bankId = bankId;
     }
 
 
-    public void setFreq(double freq) {
-        this.freq = freq;
+    public String getId() {
+        return id;
     }
 
-    public void setLastTransaction(LocalDateTime lastTransaction) {
-        this.lastTransaction = lastTransaction;
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+
+    public void setBankId(String bankId) {
+        this.bankId = bankId;
     }
 
     public double getFreq() {
@@ -67,20 +71,52 @@ public class Account implements Serializable {
         return lastTransaction;
     }
 
-    @Override
-    public String toString() {
-        return "Account{" +
-                "id='" + id + '\'' +
-                ", accId='" + accId + '\'' +
-                ", bank='" + bank + '\'' +
-                ", user='" + user + '\'' +
-                ", freq=" + freq +
-                ", lastTransaction=" + (lastTransaction != null ? lastTransaction.toString() : "null") +
-                ", regularIntervelTransection=" + regularIntervelTransection +
-                ", isSuspicious=" + isSuspicious +
-                ", nominees=" + (nominees != null ? nominees.toString() : "null") +
-                '}';
+    public int getRegularIntervelTransection() {
+        return regularIntervelTransection;
+    }
+
+
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
+
+
+    public void setFreq(double freq) {
+        this.freq = freq;
+    }
+
+    public void setLastTransaction(LocalDateTime lastTransaction) {
+        this.lastTransaction = lastTransaction;
+    }
+
+    public void setRegularIntervelTransection(int regularIntervelTransection) {
+        this.regularIntervelTransection = regularIntervelTransection;
+    }
+
+    public void setSuspicious(boolean suspicious) {
+        isSuspicious = suspicious;
+    }
+
+    public boolean getSuspicious() {
+        return isSuspicious;
+    }
+
+    public String getBankId() {
+        return bankId;
+    }
+
+    public double getSuspiciousScore() {
+        return suspiciousScore;
+    }
+
+    public void setSuspiciousScore(double suspiciousScore) {
+        this.suspiciousScore = suspiciousScore;
     }
 
 }
-

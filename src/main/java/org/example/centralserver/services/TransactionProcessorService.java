@@ -18,16 +18,17 @@ public class TransactionProcessorService {
     @Async("taskExecutor")
     public CompletableFuture<Void> processTransactionAsync(Transection transaction, String bank) {
         try {
-            String sender = transaction.getSender();
-            String receiver = transaction.getReceiver();
+
 
             System.out.println("Processing transaction " + transaction +
                     " on thread: " + Thread.currentThread().getName());
 
 
             //process transactions and based on that do work
-            Account senderAccount = accountLoader.loadAccountIntoRedis(sender, transaction, bank);
-            Account receiverAccount = accountLoader.loadAccountIntoRedis(receiver, transaction, bank);
+            Account senderAccount = (Account) transaction.getSender();
+            senderAccount=accountLoader.loadAccountIntoRedis(senderAccount,transaction,bank,true);
+            Account receiverAccount = (Account) transaction.getReceiver();
+            receiverAccount = accountLoader.loadAccountIntoRedis(receiverAccount, transaction, bank,false);
 
 
             return CompletableFuture.completedFuture(null);
