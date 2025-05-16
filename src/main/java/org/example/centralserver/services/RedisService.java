@@ -1,5 +1,8 @@
 package org.example.centralserver.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.example.centralserver.Entity.Account;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -10,26 +13,40 @@ import java.util.Set;
 public class RedisService {
 
     @Autowired
-    //save in key value pairs key being string and value as object
     private RedisTemplate<String, Object> redisTemplate;
 
     // Save an object in Redis
     public void saveObject(String key, Object value) {
         redisTemplate.opsForValue().set(key, value);
+        System.out.println("Saving object: " + key);
+    }
+
+    public void incrementFreq(String redisKey) {
+        redisTemplate.opsForValue().increment(redisKey + "_freq", 1);
     }
 
     // Retrieve an object from Redis
     public <T> T getObject(String key, Class<T> type) {
         Object value = redisTemplate.opsForValue().get(key);
-        if (value != null && type.isInstance(value)) {
-            return type.cast(value);
+        if (value != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            // Convert the LinkedHashMap to the target type
+            return objectMapper.convertValue(value, type);
         }
         return null;
     }
 
+
+    // Delete a key from Redis
     public void deleteKey(String key) {
         redisTemplate.delete(key);
     }
+
+    public Long increment(String key) {
+        return redisTemplate.opsForValue().increment(key, 1L);
+    }
+
 
     // Add a value to a Redis set
     public void addToSet(String setName, String value) {

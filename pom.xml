@@ -89,7 +89,12 @@
 			<version>3.16.4</version>
 		</dependency>
 
-
+		<!-- https://mvnrepository.com/artifact/redis.clients/jedis -->
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>6.0.0</version>
+		</dependency>
 
 
 	</dependencies>

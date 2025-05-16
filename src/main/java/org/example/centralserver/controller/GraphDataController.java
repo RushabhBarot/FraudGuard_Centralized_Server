@@ -1,6 +1,5 @@
 package org.example.centralserver.controller;
 
-import org.example.centralserver.dto.GraphDataDTO;
 import org.example.centralserver.services.GraphDataService;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
